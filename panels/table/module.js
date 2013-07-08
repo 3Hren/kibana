@@ -45,6 +45,7 @@ angular.module('kibana.table', [])
     fields    : [],
     highlight : [],
     timestamp : ['@timestamp'],
+    timestampConversionMap: {},
     sortable  : true,
     header    : true,
     paging    : true, 
@@ -124,6 +125,9 @@ angular.module('kibana.table', [])
   }
 
   $scope.build_search = function(field,value,negate) {
+    if (_.contains($scope.panel.timestamp, field)) {
+      value = $scope.panel.timestampConversionMap[value];
+    }
     $scope.panel.query = add_to_query($scope.panel.query,field,value,negate)
     $scope.panel.offset = 0;
     $scope.get_data();
@@ -198,11 +202,13 @@ angular.module('kibana.table', [])
         // Reverse if needed
         if($scope.panel.sort[1] == 'desc')
           $scope.data.reverse();
-        
+
+        $scope.panel.timestampConversionMap = {};
         $scope.data = _.map($scope.data, function(row) {
           result = _.map(row._source, function(v,k) {
             if (_.contains($scope.panel.timestamp, k)) {
              var d = new Date(v);
+             $scope.panel.timestampConversionMap[d.toLocaleString()] = v;
              return d.toLocaleString();
             }
             return v;
